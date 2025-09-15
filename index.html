@@ -1,167 +1,225 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Gombalan</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Instagram-style Image Generator</title>
   <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      height: 100vh;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      overflow: hidden;
-      transition: background 1s;
-    }
-    body.romantis {
-      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-    }
-    body.malam {
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    }
-    .credit {
-      position: absolute;
-      top: 10px;
-      right: 20px;
-      font-size: 16px;
-      color: #fff;
-      font-style: italic;
-      opacity: 0.8;
-    }
-    h1 {
-      color: #fff;
-      margin-bottom: 20px;
-      text-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-    }
-    .btn {
-      background-color: #ff4d6d;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 25px;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-      transition: 0.3s;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
-      margin: 5px;
-      z-index: 10;
-    }
-    .btn:hover {
-      background-color: #ff1e4d;
-      transform: scale(1.05);
-    }
-    p {
-      margin-top: 30px;
-      font-size: 20px;
-      color: #fff;
-      font-weight: bold;
-      min-height: 60px;
-    }
-    .heart {
-      position: absolute;
-      color: red;
-      font-size: 24px;
-      animation: fall linear forwards;
-    }
-    @keyframes fall {
-      0% {
-        transform: translateY(-50px) rotate(0deg);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(100vh) rotate(360deg);
-        opacity: 0;
-      }
-    }
+    :root{--bg:#111;--panel:#1f1f1f;--muted:#bbb;--accent:#0a84ff}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:#eee;display:flex;gap:20px;min-height:100vh;align-items:flex-start;padding:24px}
+    .controls{width:360px;background:var(--panel);padding:16px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
+    .preview-wrap{flex:1;display:flex;flex-direction:column;align-items:center}
+    label{display:block;font-size:13px;margin:8px 0 6px;color:var(--muted)}
+    input[type=file]{color:transparent}
+    .row{display:flex;gap:8px}
+    input[type=text],textarea,select,input[type=number]{width:100%;padding:8px;border-radius:8px;border:1px solid #333;background:#0b0b0c;color:#eee}
+    textarea{min-height:72px;resize:vertical}
+    button{padding:10px 12px;border-radius:10px;border:0;background:var(--accent);color:white;cursor:pointer}
+    .canvas-frame{background:#222;padding:20px;border-radius:16px}
+    canvas{display:block;border-radius:12px;max-width:100%;height:auto}
+    .small{font-size:12px;color:var(--muted)}
+    .control-group{margin-bottom:12px}
+    .flex{display:flex;gap:8px}
+    .grow{flex:1}
+    .drop-zone{border:2px dashed #666;padding:20px;text-align:center;border-radius:12px;margin-bottom:12px}
+    .drop-zone.dragover{background:#333}
   </style>
 </head>
-<body class="romantis">
-  <div class="credit">by zix</div>
-  <h1>Tekan Tombolnya Dulu 😏</h1>
+<body>
+  <div class="controls">
+    <h3 style="margin:0 0 10px">Instagram-style Image Generator</h3>
 
-  <!-- tombol aksi -->
-  <div>
-    <button class="btn" onclick="showGombal()">💌 Tekan Aku</button>
-    <button class="btn" onclick="toggleTema()">🌙/💖 Ganti Tema</button>
+    <div class="drop-zone" id="dropZone">Seret & letakkan gambar di sini (latar atau profil)</div>
+
+    <div class="control-group">
+      <label>Unggah foto latar (background)</label>
+      <input id="bgFile" type="file" accept="image/*" />
+    </div>
+
+    <div class="control-group">
+      <label>Unggah foto profil (profil bulat)</label>
+      <input id="avatarFile" type="file" accept="image/*" />
+    </div>
+
+    <div class="control-group">
+      <label>Nama pengguna</label>
+      <input id="username" type="text" value="hiilang.arah" />
+    </div>
+
+    <div class="control-group">
+      <label>Teks (multi baris)</label>
+      <textarea id="overlayText">TETAP SALING
+MENYEMANGATI
+WALAUPUN SAMA
+SAMA SESAT SEHAT
+SELALU SODARA TAK
+SEDARAH...</textarea>
+    </div>
+
+    <div class="control-group flex">
+      <div class="grow">
+        <label>Ukuran huruf</label>
+        <input id="fontSize" type="number" value="48" min="12" max="200" />
+      </div>
+      <div style="width:120px">
+        <label>Garis tepi</label>
+        <input id="strokeWidth" type="number" value="6" min="0" max="40" />
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Warna isi</label>
+      <input id="fillColor" type="text" value="#FFD500" />
+    </div>
+
+    <div class="control-group">
+      <label>Warna outline</label>
+      <input id="strokeColor" type="text" value="#2536C7" />
+    </div>
+
+    <div class="control-group">
+      <label>Susun teks</label>
+      <div class="row">
+        <select id="textAlign"><option value="center">Tengah</option><option value="left">Kiri</option><option value="right">Kanan</option></select>
+        <select id="fontFamily"><option>Impact</option><option>Arial</option><option>Roboto</option><option>Georgia</option></select>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Posisi teks (dari atas)</label>
+      <input id="textY" type="number" value="200" />
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="renderBtn">Render</button>
+      <button id="downloadBtn">Download PNG</button>
+    </div>
   </div>
 
-  <p id="gombal"></p>
-
-  <!-- Backsound musik romantis -->
-  <audio id="backsound" autoplay loop>
-    <source src="https://www.bensound.com/bensound-music/bensound-romantic.mp3" type="audio/mpeg">
-    Browser kamu tidak mendukung audio.
-  </audio>
+  <div class="preview-wrap">
+    <div class="canvas-frame">
+      <canvas id="c" width="800" height="1000"></canvas>
+    </div>
+    <div class="small" style="margin-top:8px">Preview (klik Render untuk update)</div>
+  </div>
 
   <script>
-    const gombalan = [
-      "Kamu tau gak? Senyummu itu kayak matahari pagi, bikin dunia jadi lebih indah. ☀️💕",
-      "Aku gak butuh kopi lagi, soalnya tatapanmu udah bikin aku melek semalaman. ☕😍",
-      "Kalau disuruh pilih antara kamu dan udara… aku pilih kamu, soalnya tanpa kamu aku gak bisa hidup. 💘",
-      "Kamu tuh kayak wifi, kalau deket bikin aku tenang, kalau jauh bikin gelisah. 📶❤️",
-      "Andai aku jadi air, aku pengen mengalir di hidupmu biar selalu ada buat kamu. 🌊💞"
-    ];
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
 
-    function showGombal() {
-      const randomIndex = Math.floor(Math.random() * gombalan.length);
-      const text = gombalan[randomIndex];
-      typeWriterEffect(text);
+    const bgFile = document.getElementById('bgFile');
+    const avatarFile = document.getElementById('avatarFile');
+    const username = document.getElementById('username');
+    const overlayText = document.getElementById('overlayText');
+    const fontSize = document.getElementById('fontSize');
+    const strokeWidth = document.getElementById('strokeWidth');
+    const fillColor = document.getElementById('fillColor');
+    const strokeColor = document.getElementById('strokeColor');
+    const textAlign = document.getElementById('textAlign');
+    const fontFamily = document.getElementById('fontFamily');
+    const textY = document.getElementById('textY');
 
-      // hujan love
-      for (let i = 0; i < 10; i++) {
-        createHeart();
-      }
+    const renderBtn = document.getElementById('renderBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const dropZone = document.getElementById('dropZone');
 
-      // play musik kalau belum jalan
-      const audio = document.getElementById("backsound");
-      if (audio.paused) {
-        audio.play();
-      }
+    let bgImg = null;
+    let avatarImg = null;
+
+    function loadImage(file, cb){
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = ()=>cb(img);
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
-    function typeWriterEffect(text) {
-      const p = document.getElementById("gombal");
-      p.innerHTML = "";
-      let i = 0;
+    bgFile.onchange = e=>{
+      if(e.target.files[0]) loadImage(e.target.files[0], img=>{bgImg=img;});
+    };
+    avatarFile.onchange = e=>{
+      if(e.target.files[0]) loadImage(e.target.files[0], img=>{avatarImg=img;});
+    };
 
-      function typing() {
-        if (i < text.length) {
-          p.innerHTML += text.charAt(i);
-          i++;
-          setTimeout(typing, 50);
-        }
+    function draw(){
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      if(bgImg){
+        ctx.drawImage(bgImg,0,0,canvas.width,canvas.height);
       }
-      typing();
-    }
 
-    function createHeart() {
-      const heart = document.createElement("div");
-      heart.classList.add("heart");
-      heart.innerText = "❤️";
-      heart.style.left = Math.random() * 100 + "vw";
-      heart.style.fontSize = Math.random() * 20 + 15 + "px";
-      heart.style.animationDuration = (Math.random() * 2 + 3) + "s";
-      
-      document.body.appendChild(heart);
+      // header bar
+      ctx.fillStyle="#00000088";
+      ctx.fillRect(0,0,canvas.width,80);
 
-      setTimeout(() => {
-        heart.remove();
-      }, 5000);
-    }
-
-    function toggleTema() {
-      const body = document.body;
-      if (body.classList.contains("romantis")) {
-        body.classList.remove("romantis");
-        body.classList.add("malam");
-      } else {
-        body.classList.remove("malam");
-        body.classList.add("romantis");
+      if(avatarImg){
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(40,40,30,0,Math.PI*2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(avatarImg,10,10,60,60);
+        ctx.restore();
       }
+
+      ctx.fillStyle="#fff";
+      ctx.font="bold 28px Arial";
+      ctx.fillText(username.value,90,50);
+
+      // overlay text
+      ctx.textAlign=textAlign.value;
+      ctx.textBaseline="top";
+      ctx.font=`bold ${fontSize.value}px ${fontFamily.value}`;
+      ctx.lineWidth=strokeWidth.value;
+      ctx.strokeStyle=strokeColor.value;
+      ctx.fillStyle=fillColor.value;
+
+      const lines=overlayText.value.split(/\\n/);
+      let y= parseInt(textY.value);
+      let x=canvas.width/2;
+      if(textAlign.value==="left") x=40;
+      if(textAlign.value==="right") x=canvas.width-40;
+
+      lines.forEach(line=>{
+        ctx.strokeText(line,x,y);
+        ctx.fillText(line,x,y);
+        y+=parseInt(fontSize.value)+10;
+      });
     }
+
+    renderBtn.onclick=draw;
+    downloadBtn.onclick=()=>{
+      const link=document.createElement('a');
+      link.download='output.png';
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+    };
+
+    // drag & drop
+    dropZone.addEventListener('dragover', e=>{
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', e=>{
+      dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', e=>{
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if(e.dataTransfer.files.length){
+        [...e.dataTransfer.files].forEach(file=>{
+          if(file.type.startsWith('image/')){
+            if(!bgImg){loadImage(file, img=>{bgImg=img;draw();});}
+            else{loadImage(file, img=>{avatarImg=img;draw();});}
+          }
+        });
+      }
+    });
+
+    draw();
   </script>
 </body>
 </html>
